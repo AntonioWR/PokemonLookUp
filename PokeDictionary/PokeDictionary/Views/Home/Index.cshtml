@@ -1,0 +1,111 @@
+﻿@{
+    ViewData["Title"] = "Home Page";
+}
+
+<script>
+    let adjectivesByLetter = null;
+
+    async function loadAdjectives() {
+        if (adjectivesByLetter) {
+            return adjectivesByLetter;
+        }
+
+        const response = await fetch('/data/adjectives.json');
+        if (!response.ok) {
+            throw new Error('Failed to load adjectives');
+        }
+
+        adjectivesByLetter = await response.json();
+        return adjectivesByLetter;
+    }
+
+    function getRandomAdjectiveForName(name, map) {
+        const firstLetter = (name?.[0] || '').toUpperCase();
+        const list = map[firstLetter] || [];
+        if (list.length === 0) {
+            return 'Awesome';
+        }
+
+        const index = Math.floor(Math.random() * list.length);
+        return list[index];
+    }
+
+    async function loadData() {
+        try {
+            const response = await fetch('https://pokeapi.co/api/v2/pokemon?limit=100000&offset=0');
+
+            if (!response.ok) {
+                throw new Error('Request failed');
+            }
+
+            // status ok
+            const data = await response.json();
+            // log the api return result in console for debug
+            // console.log(data);
+
+            // Displaying the count
+            document.getElementById("pokemon-count").textContent = data.count;
+
+            // randomly pick one
+            const random_number = Math.floor(Math.random() * data.count);
+            const randomItem = data.results[random_number];
+
+            // The id is different from its index in the array
+            const randomItemId = randomItem.url.split("/").filter(Boolean).pop();
+
+            const adjectiveMap = await loadAdjectives();
+            const adjective = getRandomAdjectiveForName(randomItem.name, adjectiveMap);
+            document.getElementById("pokemon-of-the-day").textContent = `${adjective} ${randomItem.name}`
+
+
+            document.getElementById("pokemon-of-the-day-id").textContent = randomItemId;
+
+            const imageUrl = `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/${randomItemId}.png`;
+            const imageElement = document.getElementById("pokemon-of-the-day-image");
+            imageElement.src = imageUrl;
+            imageElement.alt = `${randomItem.name} sprite`;
+
+            const cryUrl = `https://raw.githubusercontent.com/PokeAPI/cries/main/cries/pokemon/latest/${randomItemId}.ogg`;
+            const cryElement = document.getElementById("pokemon-of-the-day-cry");
+            cryElement.src = cryUrl;
+            cryElement.load();
+        } catch (error) {
+            console.error(error);
+        }
+    }
+
+    loadData();
+</script>
+
+<div class="text-center">
+    <h1 class="display-4">Welcome</h1>
+    <p>
+        total Pokemon in API:
+        <span id="pokemon-count">Loading....</span>
+    </p>
+
+    <p>
+        Your Pokemon of the day:
+        <span id="pokemon-of-the-day"> Loading....</span>
+    </p>
+
+    <p>
+        ID:
+        <span id="pokemon-of-the-day-id"> Loading....</span>
+    </p>
+
+    <p>
+        Front image:
+        <br />
+        <img id="pokemon-of-the-day-image" src="" alt="Loading sprite..." width="96" height="96" />
+    </p>
+
+    <p>
+        Cry:
+        <br />
+        <audio id="pokemon-of-the-day-cry" controls preload="none">
+            Your browser does not support the audio element.
+        </audio>
+    </p>
+
+</div>
